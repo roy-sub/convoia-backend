@@ -1,6 +1,7 @@
 import sys
 import signal
 import uvicorn
+import asyncio
 from pydantic import BaseModel, EmailStr
 from fastapi import FastAPI, HTTPException
 from ai_assistant import FeatureMatcher
@@ -69,7 +70,7 @@ daywise_scheduler = DaywiseSchedulerManager()
 # Add CORS Middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Add your React app's URL
+    allow_origins=["*"],  # Add your React app's URL
     allow_credentials=True,
     allow_methods=["*"],  # Allows all methods
     allow_headers=["*"],  # Allows all headers
@@ -86,10 +87,6 @@ class UserInput(BaseModel):
 
 class TextToSpeechRequest(BaseModel):
     text: str
-
-# Set up the Schedules
-hourwise_scheduler.schedule_task(interval_minutes=MINUTE_SCHEDULER)  
-daywise_scheduler.schedule_task(hour=0, minute=0)
 
 # Graceful Shutdown the Handler
 def signal_handler(sig, frame):
@@ -192,8 +189,6 @@ async def process_user_input(request: UserInput):
         traceback.print_exc()
         return {"response": error_message}
 
-import asyncio
-
 @app.post("/api/transcribe")
 async def transcribe_audio(file: UploadFile = File(...)):
     try:
@@ -277,5 +272,6 @@ async def text_to_speech(request: TextToSpeechRequest):
         }
     )
 
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8080)
+# Set up the Schedules
+hourwise_scheduler.schedule_task(interval_minutes=MINUTE_SCHEDULER)  
+daywise_scheduler.schedule_task(hour=0, minute=0)
